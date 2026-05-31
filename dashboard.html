@@ -96,6 +96,57 @@
     }
     .meta-field input:focus { border-color: #fbbf24; }
 
+    /* Unidades */
+    .unidades-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .unidade-card {
+      background: #111122;
+      border: 1px solid #1e1e3a;
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .unidade-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+    }
+    .unidade-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    .unidade-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .unidade-row label { color: #666; }
+    .unidade-row input {
+      background: #0d0d1a;
+      border: 1px solid #1e1e3a;
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 10px;
+      width: 100px;
+      text-align: center;
+      outline: none;
+    }
+    .unidade-row input:focus { border-color: var(--accent); }
+    .unidade-stat { font-size: 11px; color: #555; margin-top: 4px; }
+
     /* KPIs */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
     .kpi-card { background: #111122; border: 1px solid #1e1e3a; border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
@@ -200,6 +251,25 @@
     </div>
 
     <button class="btn-update" onclick="atualizar()">Atualizar Dashboard</button>
+  </div>
+</div>
+
+<!-- Unidades -->
+<div class="section">
+  <div class="section-title">Unidades</div>
+  <div class="unidades-grid">
+    <div class="unidade-card" style="--accent:#4ade80">
+      <div class="unidade-title">📍 Ampere Natal</div>
+      <div class="unidade-row"><label>Vendedores ativos</label><input type="number" id="venNatal" value="6" min="1" onchange="atualizar()"></div>
+      <div class="unidade-row"><label>% da meta</label><input type="text" id="pctNatal" value="67" onchange="atualizar()"><span style="color:#555;font-size:11px">%</span></div>
+      <div id="statsNatal" class="unidade-stat"></div>
+    </div>
+    <div class="unidade-card" style="--accent:#60a5fa">
+      <div class="unidade-title">📍 Ampere Caruaru</div>
+      <div class="unidade-row"><label>Vendedores ativos</label><input type="number" id="venCaruaru" value="3" min="1" onchange="atualizar()"></div>
+      <div class="unidade-row"><label>% da meta</label><input type="text" id="pctCaruaru" value="33" onchange="atualizar()"><span style="color:#555;font-size:11px">%</span></div>
+      <div id="statsCaruaru" class="unidade-stat"></div>
+    </div>
   </div>
 </div>
 
@@ -350,6 +420,29 @@
     compHtml+=`</tbody><tfoot><tr><td>TOTAL</td><td>${brl(t25)}</td><td>${tc25}</td><td class="v26">${brl(t26)}</td><td class="v26">${tc26}</td><td class="${vt>=0?'vpos':'vneg'}">${vt>=0?'+':''}${vt.toFixed(1)}%</td><td></td></tr></tfoot>`;
     document.getElementById('compTable').innerHTML = compHtml;
 
+    // Unidades
+    const venNatal = parseInt(document.getElementById('venNatal').value) || 6;
+    const venCaruaru = parseInt(document.getElementById('venCaruaru').value) || 3;
+    const pctNatal = num(document.getElementById('pctNatal').value) / 100;
+    const pctCaruaru = num(document.getElementById('pctCaruaru').value) / 100;
+
+    const metaNatalFat = META_FAT * pctNatal;
+    const metaCaruaruFat = META_FAT * pctCaruaru;
+    const metaNatalCon = Math.round(META_CON * pctNatal);
+    const metaCaruaruCon = Math.round(META_CON * pctCaruaru);
+
+    const tickPorVendNatal = metaNatalFat / venNatal / 12;
+    const tickPorVendCaruaru = metaCaruaruFat / venCaruaru / 12;
+    const conPorVendNatal = Math.ceil(metaNatalCon / venNatal / 12);
+    const conPorVendCaruaru = Math.ceil(metaCaruaruCon / venCaruaru / 12);
+
+    document.getElementById('statsNatal').innerHTML =
+      'Meta anual: <b style="color:#4ade80">' + brl(metaNatalFat) + '</b> · ' + metaNatalCon + ' contratos<br>' +
+      'Por vendedor/mês: <b style="color:#4ade80">' + brl(tickPorVendNatal) + '</b> · ' + conPorVendNatal + ' contratos';
+    document.getElementById('statsCaruaru').innerHTML =
+      'Meta anual: <b style="color:#60a5fa">' + brl(metaCaruaruFat) + '</b> · ' + metaCaruaruCon + ' contratos<br>' +
+      'Por vendedor/mês: <b style="color:#60a5fa">' + brl(tickPorVendCaruaru) + '</b> · ' + conPorVendCaruaru + ' contratos';
+
     // Metas Sugeridas
     const restFat = META_FAT - acumFat;
     const restCon = META_CON - acumCon;
@@ -365,10 +458,12 @@
 
     let metasHtml = `<thead><tr>
       <th style="text-align:left">Mês</th>
-      <th>Meta Fat. Sugerida</th>
-      <th>Meta Contratos</th>
-      <th>Base (2025)</th>
-      <th>Crescimento Esperado</th>
+      <th>Meta Total</th>
+      <th>Ctrs</th>
+      <th style="color:#4ade80">Natal (${venNatal} vend.)</th>
+      <th style="color:#60a5fa">Caruaru (${venCaruaru} vend.)</th>
+      <th>Base 2025</th>
+      <th>Cresc.</th>
     </tr></thead><tbody>`;
 
     let totalMetaFat = 0, totalMetaCon = 0;
@@ -383,18 +478,26 @@
         totalMetaFat += mFat;
         totalMetaCon += mCon;
         const corCresc = cresc >= 0 ? '#4ade80' : '#f87171';
+        const natalFat = brl(mFat * pctNatal);
+        const caruaruFat = brl(mFat * pctCaruaru);
+        const natalPV = brl(mFat * pctNatal / venNatal);
+        const caruaruPV = brl(mFat * pctCaruaru / venCaruaru);
         metasHtml += `<tr>
           <td style="text-align:left;font-weight:700;color:#e0e0e0">${mes}</td>
           <td style="color:#fbbf24;font-weight:700">${brl(mFat)}</td>
           <td style="color:#fbbf24;font-weight:700">${mCon}</td>
+          <td style="color:#4ade80">${natalFat}<br><span style="font-size:10px;color:#2d6a4f">${natalPV}/vend.</span></td>
+          <td style="color:#60a5fa">${caruaruFat}<br><span style="font-size:10px;color:#1e3a5f">${caruaruPV}/vend.</span></td>
           <td style="color:#666">${brl(base25)}</td>
           <td style="color:${corCresc};font-weight:700">${cresc>=0?'+':''}${cresc.toFixed(1)}%</td>
         </tr>`;
       } else {
         metasHtml += `<tr>
           <td style="text-align:left;font-weight:700;color:#e0e0e0">${mes}</td>
-          <td class="v26">${brl(d26[0])} <span style="font-size:10px;color:#555">(realizado)</span></td>
-          <td class="v26">${d26[1]} <span style="font-size:10px;color:#555">(realizado)</span></td>
+          <td class="v26">${brl(d26[0])}<br><span style="font-size:10px;color:#555">realizado</span></td>
+          <td class="v26">${d26[1]}</td>
+          <td style="color:#333">—</td>
+          <td style="color:#333">—</td>
           <td style="color:#666">${brl(dados2025[idx][0])}</td>
           <td style="color:#555">—</td>
         </tr>`;
@@ -405,6 +508,8 @@
       <td style="text-align:left">TOTAL RESTANTE</td>
       <td style="color:#fbbf24">${brl(totalMetaFat)}</td>
       <td style="color:#fbbf24">${totalMetaCon}</td>
+      <td style="color:#4ade80">${brl(totalMetaFat * pctNatal)}</td>
+      <td style="color:#60a5fa">${brl(totalMetaFat * pctCaruaru)}</td>
       <td></td><td></td>
     </tr></tfoot>`;
     document.getElementById('metasTable').innerHTML = metasHtml;
