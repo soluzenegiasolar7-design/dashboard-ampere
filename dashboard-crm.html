@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ampere Soluções — CRM Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:#0d0d1a;color:#e0e0e0;padding:24px;min-height:100vh}
+
+    /* HEADER */
+    .header{text-align:center;margin-bottom:24px}
+    .header h1{font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+    .header .subtitle{color:#555;font-size:13px}
+    .header-actions{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+    .btn{background:#111122;border:1px solid #1e1e3a;color:#aaa;padding:7px 16px;border-radius:8px;font-size:12px;cursor:pointer;transition:all .2s}
+    .btn:hover{border-color:#e94560;color:#e94560}
+    .btn-primary{background:#e94560;border-color:#e94560;color:#fff}
+    .btn-primary:hover{background:#c73652;border-color:#c73652;color:#fff}
+
+    /* UNIT TABS */
+    .unit-tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid #1e1e3a;justify-content:center}
+    .unit-tab{padding:12px 40px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:transparent;color:#555;transition:all .2s;position:relative;letter-spacing:.5px;text-transform:uppercase}
+    .unit-tab::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;border-radius:2px 2px 0 0;background:transparent;transition:background .2s}
+    .unit-tab.active-natal{color:#60a5fa}
+    .unit-tab.active-natal::after{background:#60a5fa}
+    .unit-tab.active-caruaru{color:#fb923c}
+    .unit-tab.active-caruaru::after{background:#fb923c}
+
+    /* PERIOD */
+    .period-bar{display:flex;gap:8px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+    .period-btn{background:#111122;border:1px solid #1e1e3a;color:#666;padding:6px 18px;border-radius:20px;font-size:12px;cursor:pointer;transition:all .2s}
+    .period-btn.active-natal{background:#60a5fa;border-color:#60a5fa;color:#0d0d1a;font-weight:700}
+    .period-btn.active-caruaru{background:#fb923c;border-color:#fb923c;color:#0d0d1a;font-weight:700}
+
+    /* SECTION TITLE */
+    .section-title{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;padding-left:10px}
+    .section-title.natal{color:#60a5fa;border-left:3px solid #60a5fa}
+    .section-title.caruaru{color:#fb923c;border-left:3px solid #fb923c}
+
+    /* CARD */
+    .card{background:#111122;border:1px solid #1e1e3a;border-radius:12px;padding:20px}
+
+    /* KPI */
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    .kpi-card{background:#111122;border:1px solid #1e1e3a;border-radius:12px;padding:20px 18px}
+    .kpi-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+    .kpi-value{font-size:32px;font-weight:700;line-height:1}
+    .kpi-sub{font-size:12px;color:#555;margin-top:6px}
+
+    /* MAIN GRID */
+    .main-grid{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:24px}
+    @media(max-width:1100px){.main-grid{grid-template-columns:1fr}}
+
+    /* RANKING */
+    .ranking-list{list-style:none;margin-top:8px}
+    .ranking-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1a1a2e}
+    .ranking-item:last-child{border-bottom:none}
+    .rank-pos{width:24px;height:24px;border-radius:50%;background:#1e1e3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#555;flex-shrink:0}
+    .rank-pos.gold{background:#facc15;color:#0d0d1a}
+    .rank-pos.silver{background:#94a3b8;color:#0d0d1a}
+    .rank-pos.bronze{background:#cd7c3a;color:#fff}
+    .rank-bar-wrap{flex:1;background:#1a1a2e;border-radius:4px;height:5px;overflow:hidden;margin-top:4px}
+    .rank-bar{height:100%;border-radius:4px;transition:width .6s ease}
+
+    /* CHART */
+    .chart-wrap{position:relative;height:240px}
+
+    /* BOTTOM GRID */
+    .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+
+    /* TEMPO MEDIO */
+    .time-metric{text-align:center;padding:20px 0}
+    .time-big{font-size:56px;font-weight:700;line-height:1}
+    .time-unit{font-size:16px;color:#555;margin-top:4px}
+    .time-sub{font-size:12px;color:#444;margin-top:8px}
+
+    /* MAP */
+    #capilaridadeMap{height:360px;border-radius:10px;overflow:hidden;margin-bottom:16px;border:1px solid #1e1e3a}
+    .leaflet-container{background:#0a0a18!important}
+    .dark-popup .leaflet-popup-content-wrapper{background:#111122;border:1px solid #1e1e3a;color:#e0e0e0;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+    .dark-popup .leaflet-popup-tip{background:#111122}
+    .dark-popup .leaflet-popup-close-button{color:#555!important}
+
+    /* CITY GRID */
+    .city-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:12px}
+    .city-card{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:8px;padding:10px;text-align:center;transition:border-color .2s}
+    .city-card:hover{border-color:#e94560}
+    .city-name{font-size:11px;color:#aaa;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .city-count{font-size:20px;font-weight:700}
+    .city-state{font-size:10px;color:#333366;margin-top:4px}
+    .city-bar{background:#1a1a2e;border-radius:3px;height:3px;margin-top:6px;overflow:hidden}
+    .city-bar-fill{height:100%;border-radius:3px;transition:width .7s}
+
+    /* STATUS */
+    .status-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:#555;justify-content:center}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#555}
+    .status-dot.ok{background:#4ade80;animation:pulse 2s infinite}
+    .status-dot.error{background:#e94560}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* MISC */
+    .demo-badge{display:inline-block;background:#facc15;color:#0d0d1a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:1px;margin-left:8px}
+    .loader{display:inline-block;width:14px;height:14px;border:2px solid #1e1e3a;border-top-color:#e94560;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error-box{background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.3);border-radius:8px;padding:12px 16px;font-size:12px;color:#e94560;margin-top:8px}
+    .empty{color:#333366;font-size:13px;padding:20px 0;text-align:center}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal{background:#111122;border:1px solid #1e1e3a;border-radius:16px;padding:32px;width:100%;max-width:440px}
+    .modal h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+    .modal p{font-size:12px;color:#555;margin-bottom:24px;line-height:1.6}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .form-group input{width:100%;background:#0d0d1a;border:1px solid #1e1e3a;border-radius:8px;color:#4ade80;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;font-family:monospace}
+    .form-group input:focus{border-color:#4ade80}
+    .form-group .hint{font-size:11px;color:#333366;margin-top:4px}
+    .modal-actions{display:flex;gap:10px;margin-top:24px}
+  </style>
+</head>
+<body>
+
+<!-- MODAL CONFIG -->
+<div class="modal-overlay" id="configModal">
+  <div class="modal">
+    <h2>⚙ Configuração da API</h2>
+    <p>Insira o token de acesso da API Groner.<br>
+      Groner → Configurações → Integrações → Chave de API → Gerar Token</p>
+    <div class="form-group">
+      <label>Subdomínio</label>
+      <input type="text" id="cfgSubdomain" value="amperesolucoes"/>
+      <div class="hint">URL da sua conta: {subdominio}.groner.app</div>
+    </div>
+    <div class="form-group">
+      <label>Token de API</label>
+      <input type="password" id="cfgToken" placeholder="Cole o token aqui..."/>
+      <div class="hint">O token é válido por 1 ano após geração</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveConfig()">Salvar e Conectar</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn" onclick="loadDemoData();closeModal()">Usar Demo</button>
+    </div>
+    <div id="configError" style="display:none" class="error-box"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>Ampere Soluções — CRM Dashboard <span id="demoBadge" class="demo-badge" style="display:none">DEMO</span></h1>
+  <div class="subtitle">Performance comercial por unidade</div>
+  <div class="header-actions">
+    <div class="status-bar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Aguardando configuração...</span>
+    </div>
+    <button class="btn" onclick="refreshData()"><span id="refreshIcon">↻</span> Atualizar</button>
+    <button class="btn" onclick="openModal()">⚙ API</button>
+    <span id="lastUpdated" style="font-size:11px;color:#333366"></span>
+  </div>
+</div>
+
+<!-- UNIT TABS -->
+<div class="unit-tabs">
+  <button class="unit-tab active-natal" id="tabNatal" onclick="setUnit('natal')">📍 Unidade Natal</button>
+  <button class="unit-tab" id="tabCaruaru" onclick="setUnit('caruaru')">📍 Unidade Caruaru</button>
+</div>
+
+<!-- PERIOD SELECTOR -->
+<div class="period-bar">
+  <button class="period-btn active-natal" id="pbHoje"    onclick="setPeriod('hoje',this)">Hoje</button>
+  <button class="period-btn"              id="pbSemana"  onclick="setPeriod('semana',this)">Esta Semana</button>
+  <button class="period-btn"              id="pbMes"     onclick="setPeriod('mes',this)">Este Mês</button>
+  <button class="period-btn"              id="pb30"      onclick="setPeriod('30dias',this)">30 Dias</button>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Vendas no Período</div><div class="kpi-value" id="kpiVendas">—</div><div class="kpi-sub" id="kpiVendasSub"></div></div>
+  <div class="kpi-card"><div class="kpi-label">Cards Abertos</div><div class="kpi-value" id="kpiCards">—</div><div class="kpi-sub" id="kpiCardsSub"></div></div>
+  <div class="kpi-card"><div class="kpi-label">Tempo Médio p/ Negócio</div><div class="kpi-value" id="kpiTempo">—</div><div class="kpi-sub" id="kpiTempoSub">dias</div></div>
+  <div class="kpi-card"><div class="kpi-label">Taxa de Conversão</div><div class="kpi-value" id="kpiConversao">—</div><div class="kpi-sub">leads → vendas</div></div>
+</div>
+
+<!-- TOP VENDEDOR + CHART CARDS -->
+<div class="main-grid">
+  <div class="card">
+    <div class="section-title natal" id="titleRankVendas">Top Vendedores — Semana</div>
+    <ul class="ranking-list" id="rankVendasList"><li class="empty">Carregando...</li></ul>
+  </div>
+  <div class="card">
+    <div class="section-title natal" id="titleChartCards">Cards Abertos por Vendedor — Período</div>
+    <div class="chart-wrap"><canvas id="chartCards"></canvas></div>
+  </div>
+</div>
+
+<!-- HOJE + TEMPO MÉDIO -->
+<div class="bottom-grid">
+  <div class="card">
+    <div class="section-title natal" id="titleRankHoje">Mais Cards Abertos Hoje</div>
+    <ul class="ranking-list" id="rankHojeList"><li class="empty">Carregando...</li></ul>
+  </div>
+  <div class="card">
+    <div class="section-title natal" id="titleTempo">Tempo Médio para Abertura de Negócio</div>
+    <div class="time-metric">
+      <div class="time-big" id="tempoMedioBig">—</div>
+      <div class="time-unit">dias (média)</div>
+      <div class="time-sub" id="tempoMedioSub">tempo do lead até converter em negócio</div>
+    </div>
+    <div class="chart-wrap" style="height:150px;margin-top:12px"><canvas id="chartTempo"></canvas></div>
+  </div>
+</div>
+
+<!-- CAPILARIDADE -->
+<div class="card" style="margin-bottom:24px">
+  <div class="section-title natal" id="titleCap">Capilaridade — Mapa de Cobertura</div>
+  <div id="capilaridadeMap"></div>
+  <div class="city-grid" id="cityGrid"><div class="empty" style="grid-column:1/-1">Carregando...</div></div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const DEFAULT_SUBDOMAIN = 'amperesolucoes';
+let cfg = {
+  subdomain: localStorage.getItem('groner_subdomain') || DEFAULT_SUBDOMAIN,
+  token:     localStorage.getItem('groner_token') || '',
+};
+let currentUnit   = 'natal';   // 'natal' | 'caruaru'
+let currentPeriod = 'hoje';
+let chartCards = null, chartTempo = null;
+let leafletMap = null, mapMarkers = [];
+let allCards = [], allVendas = [];  // raw data cache
+
+// ── UNIT CONFIG ───────────────────────────────────────────────────────────────
+const UNIT_COLOR = { natal: '#60a5fa', caruaru: '#fb923c' };
+
+const RN_CITY_SET = new Set([
+  'natal','parnamirim','mossoro','mossoró','caico','caicó','macaiba','macaíba',
+  'ceara mirim','ceará mirim','extremoz','sao goncalo do amarante',
+  'são gonçalo do amarante','goianinha','touros','areia branca','pau dos ferros',
+  'apodi','currais novos','santa cruz','pedro velho','nisia floresta',
+  'nísia floresta','sao jose de mipubu',
+]);
+
+function getUnit(estado, cidade) {
+  if ((estado || '').toUpperCase() === 'RN') return 'natal';
+  const c = (cidade || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  if (RN_CITY_SET.has(c)) return 'natal';
+  return 'caruaru';
+}
+
+// ── CITY COORDS ───────────────────────────────────────────────────────────────
+const CITY_COORDS = {
+  'natal':[-5.7945,-35.2110],'parnamirim':[-5.9155,-35.2626],
+  'mossoro':[-5.1875,-37.3442],'caico':[-6.4606,-37.0972],
+  'macaiba':[-5.8581,-35.3564],'sao goncalo do amarante':[-5.7939,-35.3325],
+  'ceara mirim':[-5.6408,-35.4258],'extremoz':[-5.7083,-35.2469],
+  'nisia floresta':[-6.0906,-35.2097],'goianinha':[-6.2717,-35.2017],
+  'touros':[-5.1983,-35.4628],'areia branca':[-4.9633,-37.1075],
+  'pau dos ferros':[-6.1108,-38.2075],'apodi':[-5.6597,-37.8008],
+  'currais novos':[-6.2572,-36.5167],'santa cruz':[-6.2256,-35.8231],
+  'pedro velho':[-6.4297,-35.2219],
+  'caruaru':[-8.2760,-35.9761],'recife':[-8.0476,-34.8770],
+  'olinda':[-7.9997,-34.8481],'garanhuns':[-8.8903,-36.4967],
+  'petrolina':[-9.3986,-40.5022],'jaboatao dos guararapes':[-8.1131,-34.9236],
+  'cabo de santo agostinho':[-8.2864,-35.0336],
+  'santa cruz do capibaribe':[-7.9564,-36.2050],'surubim':[-7.8353,-35.7528],
+  'bezerros':[-8.2353,-35.7478],'gravata':[-8.2000,-35.5625],
+  'belo jardim':[-8.3353,-36.4236],'caruaru pe':[-8.2760,-35.9761],
+  'campina grande':[-7.2306,-35.8811],'joao pessoa':[-7.1153,-34.8641],
+  'patos':[-7.0228,-37.2800],'sousa':[-6.7597,-38.2278],
+  'fortaleza':[-3.7172,-38.5434],'sobral':[-3.6861,-40.3503],
+  'juazeiro do norte':[-7.2130,-39.3158],'crato':[-7.2342,-39.4094],
+  'maceio':[-9.6658,-35.7350],'arapiraca':[-9.7522,-36.6611],
+  'aracaju':[-10.9472,-37.0731],'teresina':[-5.0892,-42.8019],
+  'sao luis':[-2.5391,-44.2829],'feira de santana':[-12.2665,-38.9663],
+  'salvador':[-12.9714,-38.5014],
+};
+
+function getCityCoords(cidade) {
+  if (!cidade) return null;
+  const k = cidade.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+  return CITY_COORDS[k] || null;
+}
+
+// ── UNIT LOJA IDS ─────────────────────────────────────────────────────────────
+const LOJA_ID = { natal: 1, caruaru: 2 };
+
+// ── API ───────────────────────────────────────────────────────────────────────
+function apiBase() { return `https://${cfg.subdomain}.api.groner.app`; }
+
+async function apiFetch(path, params = {}) {
+  if (!cfg.token) return null;
+  const url = new URL(apiBase() + path);
+  url.searchParams.set('PageSize', params.PageSize || 2000);
+  url.searchParams.set('PageNumber', 1);
+  try {
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${cfg.token}`, 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+  } catch(e) { console.error(path, e); return null; }
+}
+
+// ── NORMALIZE ─────────────────────────────────────────────────────────────────
+function normalizeLeadItem(item) {
+  return {
+    vendedor:    item.responsavel?.nome || 'Sem vendedor',
+    lojaId:      item.lojaId ?? null,
+    cidade:      item.endereco?.cidade || '',
+    estado:      item.endereco?.uf || '',
+    dataCriacao: item.dataInclusao || null,
+  };
+}
+
+function normalizeVendaItem(item, vendorMap) {
+  const lojaId = vendorMap[item.vendedor] ?? null;
+  return {
+    vendedor:    item.vendedor || 'Sem vendedor',
+    lojaId,
+    cidade:      '',
+    estado:      '',
+    dataCriacao: item.dataVenda || null,
+    cicloVenda:  item.cicloVenda || 0,
+    valor:       item.valorTotal || 0,
+  };
+}
+
+// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+function toISO(d) { return d.toISOString().split('T')[0]; }
+
+function periodDates(p) {
+  const now = new Date(), today = toISO(now);
+  if (p === 'hoje') return { start: today, end: today };
+  if (p === 'semana') {
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    return { start: toISO(mon), end: today };
+  }
+  if (p === 'mes') return { start: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`, end: today };
+  if (p === '30dias') { const d = new Date(now); d.setDate(now.getDate()-30); return { start: toISO(d), end: today }; }
+  return { start: today, end: today };
+}
+
+function normalizeItem(item) {
+  return {
+    vendedor: item.responsavelNome || item.vendedorNome || item.vendedor?.nome || item.responsavel?.nome || item.usuario?.nome || item.usuarioNome || 'Sem vendedor',
+    cidade:   item.municipio || item.cidade || item.endereco?.municipio || item.localidade || '',
+    estado:   item.estado || item.uf || item.endereco?.estado || '',
+    dataCriacao:  item.dataCriacao  || item.dataInicio   || item.dataAbertura || item.createdAt || null,
+    dataConversao: item.dataConversao || item.dataVenda  || item.dataFechamento || null,
+    valor: item.valor || item.valorTotal || 0,
+  };
+}
+
+function isOnDate(item, dateStr) {
+  const d = item.dataCriacao ? new Date(item.dataCriacao) : null;
+  return d ? toISO(d) === dateStr : false;
+}
+
+function isInRange(item, start, end) {
+  const d = item.dataCriacao ? new Date(item.dataCriacao) : null;
+  if (!d) return false;
+  const s = toISO(d);
+  return s >= start && s <= end;
+}
+
+// ── LOAD ──────────────────────────────────────────────────────────────────────
+async function loadData() {
+  if (!cfg.token) { loadDemoData(); return; }
+
+  setStatus('loading', 'Carregando dados...');
+  document.getElementById('demoBadge').style.display = 'none';
+
+  const { start, end } = periodDates(currentPeriod);
+
+  const [leads, vendas] = await Promise.all([
+    apiFetch('/api/Lead',  { PageSize: 5000 }),
+    apiFetch('/api/Venda', { PageSize: 2000 }),
+  ]);
+
+  if (!leads && !vendas) {
+    setStatus('error', 'Falha ao conectar — verifique o token');
+    loadDemoData(); return;
+  }
+
+  setStatus('ok', `Conectado · ${cfg.subdomain}.api.groner.app`);
+
+  // Groner response: { Content: { list: [...] } }
+  const rawLeadsList  = leads?.Content?.list  || [];
+  const rawVendasList = vendas?.Content?.list || [];
+
+  // Build vendedor→lojaId map from leads (vendas don't carry lojaId)
+  const vendorMap = {};
+  rawLeadsList.forEach(l => {
+    const nome = l.responsavel?.nome;
+    if (nome && l.lojaId) vendorMap[nome] = l.lojaId;
+  });
+
+  allCards  = rawLeadsList.map(normalizeLeadItem);
+  allVendas = rawVendasList.map(v => normalizeVendaItem(v, vendorMap));
+
+  renderUnit();
+  document.getElementById('lastUpdated').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+// ── RENDER (filtrado por unidade) ─────────────────────────────────────────────
+function renderUnit() {
+  const color  = UNIT_COLOR[currentUnit];
+  const today  = toISO(new Date());
+  const { start, end } = periodDates(currentPeriod);
+
+  // filter by unit via lojaId
+  const lojaId = LOJA_ID[currentUnit];
+  const cards  = allCards.filter(c => c.lojaId === lojaId);
+  const vendas = allVendas.filter(v => v.lojaId === lojaId);
+
+  const cardsPeriodo = cards.filter(c => isInRange(c, start, end));
+  const cardsHoje    = cards.filter(c => isOnDate(c, today));
+  // para top vendedor da semana sempre usa a semana independente do período selecionado
+  const { start: ws } = periodDates('semana');
+  const vendasSemana  = vendas.filter(v => isInRange(v, ws, today));
+
+  // update accent colors
+  updateAccent(color);
+
+  const vendasPeriodo = vendas.filter(v => isInRange(v, start, end));
+  renderKPIs(cardsPeriodo, vendasPeriodo, color);
+  renderRankVendas(vendasSemana, color);
+  renderChartCards(cardsPeriodo, color);
+  renderRankHoje(cardsHoje, color);
+  renderTempoMedio(vendasPeriodo, color);
+  renderCapilaridade(cardsPeriodo, color);
+}
+
+function updateAccent(color) {
+  const titles = ['titleRankVendas','titleChartCards','titleRankHoje','titleTempo','titleCap'];
+  const cls    = currentUnit === 'natal' ? 'natal' : 'caruaru';
+  titles.forEach(id => {
+    const el = document.getElementById(id);
+    el.className = `section-title ${cls}`;
+  });
+  // kpi values color
+  ['kpiVendas','kpiCards','kpiTempo','kpiConversao'].forEach(id => {
+    document.getElementById(id).style.color = color;
+  });
+  document.getElementById('tempoMedioBig').style.color = color;
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────────
+function renderKPIs(cards, vendas, color) {
+  document.getElementById('kpiVendas').textContent = vendas.length || 0;
+  const totalVal = vendas.reduce((s,v) => s+(v.valor||0), 0);
+  document.getElementById('kpiVendasSub').textContent = totalVal > 0
+    ? `R$ ${totalVal.toLocaleString('pt-BR',{minimumFractionDigits:0})}`
+    : 'no período';
+
+  document.getElementById('kpiCards').textContent = cards.length;
+  const lbl = {hoje:'hoje',semana:'esta semana',mes:'este mês','30dias':'30 dias'};
+  document.getElementById('kpiCardsSub').textContent = `abertos ${lbl[currentPeriod]||''}`;
+
+  const conv = cards.length > 0 ? ((vendas.length/cards.length)*100).toFixed(1) : '0.0';
+  document.getElementById('kpiConversao').textContent = conv + '%';
+}
+
+// ── RANK VENDAS (semana) ──────────────────────────────────────────────────────
+function renderRankVendas(vendas, color) {
+  const grouped = {};
+  vendas.forEach(v => { grouped[v.vendedor] = (grouped[v.vendedor]||0)+1; });
+  const sorted = Object.entries(grouped).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const max = sorted[0]?.[1] || 1;
+
+  document.getElementById('rankVendasList').innerHTML = sorted.length
+    ? sorted.map(([nome,qtd],i) => {
+        const pc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+        const c  = i===0?'#facc15':i===1?'#94a3b8':i===2?'#cd7c3a':color;
+        return `<li class="ranking-item">
+          <div class="rank-pos ${pc}">${i+1}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#e0e0e0">${nome}</div>
+            <div class="rank-bar-wrap"><div class="rank-bar" style="width:${(qtd/max*100).toFixed(0)}%;background:${c}"></div></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:${c}">${qtd}</div>
+        </li>`;
+      }).join('')
+    : '<li class="empty">Sem vendas na semana</li>';
+}
+
+// ── CHART CARDS ───────────────────────────────────────────────────────────────
+function renderChartCards(cards, color) {
+  const grouped = {};
+  cards.forEach(c => { grouped[c.vendedor] = (grouped[c.vendedor]||0)+1; });
+  const sorted = Object.entries(grouped).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const labels = sorted.map(([n])=>n.split(' ')[0]);
+  const data   = sorted.map(([,v])=>v);
+
+  if (chartCards) chartCards.destroy();
+  chartCards = new Chart(document.getElementById('chartCards').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1a1a2e' }, ticks: { color: '#666', font: { size: 11 } } },
+        y: { grid: { color: '#1a1a2e' }, ticks: { color: '#666', font: { size: 11 } }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ── RANK HOJE ─────────────────────────────────────────────────────────────────
+function renderRankHoje(cards, color) {
+  const grouped = {};
+  cards.forEach(c => { grouped[c.vendedor] = (grouped[c.vendedor]||0)+1; });
+  const sorted = Object.entries(grouped).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max = sorted[0]?.[1] || 1;
+
+  document.getElementById('rankHojeList').innerHTML = sorted.length
+    ? sorted.map(([nome,qtd],i) => {
+        const pc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+        const c  = i===0?'#facc15':i===1?'#94a3b8':i===2?'#cd7c3a':color;
+        return `<li class="ranking-item">
+          <div class="rank-pos ${pc}">${i+1}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#e0e0e0">${nome}</div>
+            <div class="rank-bar-wrap"><div class="rank-bar" style="width:${(qtd/max*100).toFixed(0)}%;background:${c}"></div></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:${c}">${qtd}</div>
+        </li>`;
+      }).join('')
+    : '<li class="empty">Nenhum card aberto hoje</li>';
+}
+
+// ── TEMPO MÉDIO (usa cicloVenda da API — já calculado) ────────────────────────
+function renderTempoMedio(vendas, color) {
+  const comCiclo = vendas.filter(v => v.cicloVenda > 0);
+  let media = 0;
+
+  if (comCiclo.length > 0) {
+    media = Math.round(comCiclo.reduce((s,v) => s + v.cicloVenda, 0) / comCiclo.length);
+    document.getElementById('tempoMedioSub').textContent = `baseado em ${comCiclo.length} vendas no período`;
+    document.getElementById('kpiTempoSub').textContent = 'dias médios p/ fechar';
+  } else {
+    document.getElementById('tempoMedioSub').textContent = 'sem vendas no período para calcular';
+    document.getElementById('kpiTempoSub').textContent = 'dias';
+  }
+
+  document.getElementById('kpiTempo').textContent = media || '—';
+  document.getElementById('tempoMedioBig').textContent = media || '—';
+
+  // chart: cicloVenda médio por vendedor
+  const grouped = {};
+  comCiclo.forEach(v => {
+    if (!grouped[v.vendedor]) grouped[v.vendedor] = [];
+    grouped[v.vendedor].push(v.cicloVenda);
+  });
+  const sorted = Object.entries(grouped)
+    .map(([n,arr]) => [n, Math.round(arr.reduce((s,d)=>s+d,0)/arr.length)])
+    .sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  if (chartTempo) chartTempo.destroy();
+  if (!sorted.length) return;
+  chartTempo = new Chart(document.getElementById('chartTempo').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([n])=>n.split(' ')[0]),
+      datasets: [{ data: sorted.map(([,v])=>v), backgroundColor: color+'99', borderRadius: 4, borderSkipped: false }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c=>`${c.raw} dias` } } },
+      scales: {
+        x: { grid: { color: '#1a1a2e' }, ticks: { color: '#666', font: { size: 10 } } },
+        y: { grid: { color: '#1a1a2e' }, ticks: { color: '#666', font: { size: 10 }, callback: v=>v+'d' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ── CAPILARIDADE ──────────────────────────────────────────────────────────────
+function renderCapilaridade(cards, color) {
+  const grouped = {};
+  cards.forEach(c => {
+    const key = c.cidade || 'Não informado';
+    if (!grouped[key]) grouped[key] = { count: 0, estado: c.estado || '', vendedores: new Set() };
+    grouped[key].count++;
+    if (c.vendedor && c.vendedor !== 'Sem vendedor') grouped[key].vendedores.add(c.vendedor.split(' ')[0]);
+  });
+
+  // init map once
+  if (!leafletMap) {
+    const center = currentUnit === 'natal' ? [-5.9,-36.5] : [-8.1,-36.5];
+    leafletMap = L.map('capilaridadeMap', { zoomControl: true, scrollWheelZoom: false }).setView(center, 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OSM © CARTO', maxZoom: 18, subdomains: 'abcd',
+    }).addTo(leafletMap);
+  }
+
+  mapMarkers.forEach(m => m.remove());
+  mapMarkers = [];
+
+  const maxCount = Math.max(...Object.values(grouped).map(g=>g.count), 1);
+  const hasBounds = [];
+
+  Object.entries(grouped).forEach(([cidade, {count, estado, vendedores}]) => {
+    const coords = getCityCoords(cidade);
+    if (coords) {
+      const radius = Math.max(8, Math.min(40, 8+(count/maxCount)*32));
+      const circle = L.circleMarker(coords, {
+        radius, fillColor: color, color: '#fff', weight: 1.5, opacity: .8, fillOpacity: .55,
+      });
+      circle.bindPopup(
+        `<div style="font-family:Segoe UI,sans-serif;min-width:130px">
+          <b style="color:${color}">${cidade}</b>${estado?' — '+estado:''}<br>
+          <span style="font-size:13px">${count} card${count>1?'s':''}</span><br>
+          <span style="font-size:11px;color:#aaa">${Array.from(vendedores).join(', ')||'—'}</span>
+        </div>`,
+        { className: 'dark-popup' }
+      );
+      circle.addTo(leafletMap);
+      mapMarkers.push(circle);
+      hasBounds.push(coords);
+    }
+  });
+
+  if (hasBounds.length > 0) {
+    leafletMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.2));
+  } else {
+    leafletMap.setView(currentUnit==='natal'?[-5.9,-36.5]:[-8.1,-36.5], 6);
+  }
+
+  // city cards
+  const sorted = Object.entries(grouped).sort((a,b)=>b[1].count-a[1].count);
+  const cMax = sorted[0]?.[1].count || 1;
+  document.getElementById('cityGrid').innerHTML = sorted.length
+    ? sorted.map(([cidade,{count,estado}]) =>
+        `<div class="city-card" style="border-color:${color}33">
+          <div class="city-name">${cidade}</div>
+          <div class="city-count" style="color:${color}">${count}</div>
+          <div class="city-bar"><div class="city-bar-fill" style="width:${(count/cMax*100).toFixed(0)}%;background:${color}"></div></div>
+          <div class="city-state">${estado||'—'}</div>
+        </div>`
+      ).join('')
+    : '<div class="empty" style="grid-column:1/-1">Sem localização nos dados</div>';
+}
+
+// ── DEMO DATA ─────────────────────────────────────────────────────────────────
+function loadDemoData() {
+  document.getElementById('demoBadge').style.display = 'inline-block';
+  setStatus('', 'Modo demo — configure a API para dados reais');
+
+  const vendNatal   = ['Carlos Silva','Amanda Souza','Rafael Costa','Juliana Lima','Pedro Alves','Mariana Ferreira'];
+  const vendCaruaru = ['Lucas Mendes','Fernanda Dias','Thiago Santos'];
+  const cidNatal    = [{c:'Natal',e:'RN'},{c:'Parnamirim',e:'RN'},{c:'Mossoró',e:'RN'},{c:'Caicó',e:'RN'},{c:'Macaíba',e:'RN'},{c:'Extremoz',e:'RN'},{c:'Ceará Mirim',e:'RN'},{c:'Goianinha',e:'RN'}];
+  const cidCaruaru  = [{c:'Caruaru',e:'PE'},{c:'Recife',e:'PE'},{c:'Campina Grande',e:'PB'},{c:'Fortaleza',e:'CE'},{c:'Bezerros',e:'PE'},{c:'Gravatá',e:'PE'},{c:'João Pessoa',e:'PB'},{c:'Garanhuns',e:'PE'}];
+
+  const hoje = toISO(new Date());
+
+  function mkCards(vends, cids, lojaId, n) {
+    return Array.from({length:n}, () => {
+      const v = vends[Math.floor(Math.random()*vends.length)];
+      const c = cids[Math.floor(Math.random()*cids.length)];
+      const daysAgo = Math.floor(Math.random()*30);
+      const d = new Date(); d.setDate(d.getDate()-daysAgo);
+      return { vendedor: v, lojaId, cidade: c.c, estado: c.e, dataCriacao: toISO(d) };
+    });
+  }
+  function mkVendas(vends, lojaId, n) {
+    return Array.from({length:n}, () => {
+      const v = vends[Math.floor(Math.random()*vends.length)];
+      const daysAgo = Math.floor(Math.random()*7);
+      const d = new Date(); d.setDate(d.getDate()-daysAgo);
+      return { vendedor: v, lojaId, cidade: '', estado: '', dataCriacao: toISO(d), cicloVenda: Math.floor(Math.random()*30)+3, valor: Math.floor(Math.random()*80000)+15000 };
+    });
+  }
+
+  allCards  = [...mkCards(vendNatal,cidNatal,1,58), ...mkCards(vendCaruaru,cidCaruaru,2,29)];
+  allVendas = [...mkVendas(vendNatal,1,16), ...mkVendas(vendCaruaru,2,8)];
+
+  renderUnit();
+  document.getElementById('lastUpdated').textContent = `Demo · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+// ── UI CONTROLS ───────────────────────────────────────────────────────────────
+function setUnit(unit) {
+  currentUnit = unit;
+  const color = UNIT_COLOR[unit];
+
+  // tabs
+  document.getElementById('tabNatal').className    = `unit-tab${unit==='natal'?' active-natal':''}`;
+  document.getElementById('tabCaruaru').className  = `unit-tab${unit==='caruaru'?' active-caruaru':''}`;
+
+  // period buttons accent
+  document.querySelectorAll('.period-btn').forEach(b => {
+    b.className = b.classList.contains('period-btn') ? 'period-btn' : 'period-btn';
+  });
+  const activeBtn = document.querySelector('.period-btn[data-active]') ||
+                    document.getElementById('pbHoje');
+  updatePeriodBtns();
+
+  // reset map so it re-centers for new unit
+  if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+
+  renderUnit();
+}
+
+function updatePeriodBtns() {
+  const ids = { hoje:'pbHoje', semana:'pbSemana', mes:'pbMes', '30dias':'pb30' };
+  const cls = `active-${currentUnit}`;
+  Object.entries(ids).forEach(([p,id]) => {
+    document.getElementById(id).className = 'period-btn' + (p===currentPeriod?' '+cls:'');
+  });
+}
+
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  updatePeriodBtns();
+  renderUnit();
+}
+
+function setStatus(type, msg) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot'+(type==='ok'?' ok':type==='error'?' error':'');
+  document.getElementById('statusText').textContent = msg;
+}
+
+async function refreshData() {
+  const icon = document.getElementById('refreshIcon');
+  icon.innerHTML = '<span class="loader"></span>';
+  await loadData();
+  icon.innerHTML = '↻';
+}
+
+function openModal() {
+  document.getElementById('cfgSubdomain').value = cfg.subdomain;
+  document.getElementById('cfgToken').value = cfg.token;
+  document.getElementById('configModal').classList.add('open');
+  document.getElementById('configError').style.display = 'none';
+}
+
+function closeModal() { document.getElementById('configModal').classList.remove('open'); }
+
+async function saveConfig() {
+  const sub = document.getElementById('cfgSubdomain').value.trim();
+  const tok = document.getElementById('cfgToken').value.trim();
+  if (!sub || !tok) {
+    document.getElementById('configError').textContent = 'Preencha o subdomínio e o token.';
+    document.getElementById('configError').style.display = 'block';
+    return;
+  }
+  cfg.subdomain = sub; cfg.token = tok;
+  localStorage.setItem('groner_subdomain', sub);
+  localStorage.setItem('groner_token', tok);
+  closeModal();
+  await loadData();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  loadData();
+  setInterval(loadData, 5*60*1000);
+});
+</script>
+</body>
+</html>
