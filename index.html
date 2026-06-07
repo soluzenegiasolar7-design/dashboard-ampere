@@ -94,6 +94,38 @@
     .fin-dash tfoot td:first-child{text-align:left;color:#e94560}
     .fin-dash .fsection{margin-bottom:32px}
 
+    /* ── CALC CARD ── */
+    .calc-card{background:#111122;border:1px solid #1e1e3a;border-radius:12px;padding:24px;margin-bottom:32px}
+    .calc-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+    .calc-field label{display:block;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .calc-field input{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:8px;color:#4ade80;font-size:15px;font-weight:700;padding:10px 14px;width:100%;outline:none;transition:border-color .2s}
+    .calc-field input:focus{border-color:#4ade80}
+    .calc-field .day-pair{display:flex;gap:8px;align-items:center}
+    .calc-field .day-pair input{text-align:center}
+    .calc-field .day-sep{color:#333366;font-size:16px;font-weight:300}
+    .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:700px){.calc-results{grid-template-columns:1fr}}
+    .calc-result-left{grid-column:1/-1}
+    .calc-stat{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:10px;padding:16px}
+    .calc-stat-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+    .calc-stat-value{font-size:22px;font-weight:700}
+    .calc-stat-sub{font-size:11px;color:#555;margin-top:4px}
+    .calc-progress-wrap{background:#0d0d1a;border:1px solid #1e1e3a;border-radius:10px;padding:16px}
+    .calc-progress-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+    .calc-progress-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px}
+    .calc-progress-pct{font-size:24px;font-weight:700}
+    .calc-bar-bg{background:#1e1e3a;border-radius:6px;height:12px;overflow:hidden;position:relative}
+    .calc-bar-real{height:100%;border-radius:6px;transition:width .6s ease;position:absolute;left:0;top:0}
+    .calc-bar-proj{height:100%;border-radius:6px;opacity:.3;transition:width .6s ease;position:absolute;left:0;top:0}
+    .calc-bar-legend{display:flex;gap:16px;margin-top:8px;font-size:10px;color:#555}
+    .calc-bar-legend span{display:flex;align-items:center;gap:4px}
+    .calc-bar-legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+    .calc-status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:12px}
+    .calc-status-ok{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)}
+    .calc-status-warn{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+    .calc-status-bad{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3)}
+    .calc-empty{color:#333366;font-size:13px;text-align:center;padding:20px;grid-column:1/-1}
+
     /* ════════════════════════════════════════
        CRM CSS (escopo .crm-dash)
     ════════════════════════════════════════ */
@@ -224,6 +256,34 @@
 
 <h1>⚡ AMPERE SOLUÇÕES</h1>
 <p class="subtitle" id="subtitleDate"></p>
+
+<!-- CALCULADORA META DO MÊS -->
+<div class="fsection">
+  <div class="section-title">Calculadora — Meta do Mês</div>
+  <div class="calc-card">
+    <div class="calc-inputs">
+      <div class="calc-field">
+        <label>Meta do Mês (R$)</label>
+        <input type="text" id="calcMeta" placeholder="Ex: 400.000" oninput="calcMes()">
+      </div>
+      <div class="calc-field">
+        <label>Realizado até hoje (R$)</label>
+        <input type="text" id="calcReal" placeholder="Ex: 160.000" oninput="calcMes()">
+      </div>
+      <div class="calc-field">
+        <label>Dia atual / Dias no mês</label>
+        <div class="day-pair">
+          <input type="number" id="calcDiaAtual" min="1" max="31" oninput="calcMes()" style="width:80px;text-align:center">
+          <span class="day-sep">/</span>
+          <input type="number" id="calcDiasMes" min="28" max="31" oninput="calcMes()" style="width:80px;text-align:center">
+        </div>
+      </div>
+    </div>
+    <div class="calc-results" id="calcResults">
+      <div class="calc-empty">Insira a meta e o valor realizado para ver a projeção</div>
+    </div>
+  </div>
+</div>
 
 <div class="fsection">
   <div class="section-title">Editar Dados</div>
@@ -602,10 +662,92 @@ async function saveConfig(){
   cfg.subdomain=sub;cfg.token=tok;localStorage.setItem('groner_subdomain',sub);localStorage.setItem('groner_token',tok);closeModal();await loadData();
 }
 
+// ════════════════════════════════════════
+// CALCULADORA META DO MÊS
+// ════════════════════════════════════════
+function calcMes() {
+  const meta = fnum(document.getElementById('calcMeta').value);
+  const real = fnum(document.getElementById('calcReal').value);
+  const diaAtual = parseInt(document.getElementById('calcDiaAtual').value) || 0;
+  const diasMes  = parseInt(document.getElementById('calcDiasMes').value)  || 0;
+  const el = document.getElementById('calcResults');
+
+  if (!meta || !real || !diaAtual || !diasMes) {
+    el.innerHTML = '<div class="calc-empty">Insira a meta e o valor realizado para ver a projeção</div>';
+    return;
+  }
+
+  const diasRestantes = diasMes - diaAtual;
+  const ritmoAtual    = real / diaAtual;
+  const projecao      = ritmoAtual * diasMes;
+  const falta         = Math.max(0, meta - real);
+  const pctReal       = Math.min((real / meta) * 100, 100);
+  const pctProj       = Math.min((projecao / meta) * 100, 100);
+  const ritmoNecessario = diasRestantes > 0 ? falta / diasRestantes : 0;
+  const ritmoVsNecessario = diasRestantes > 0 ? ((ritmoAtual - ritmoNecessario) / ritmoNecessario) * 100 : 0;
+
+  let statusCls, statusIcon, statusTxt;
+  if (projecao >= meta * 1.05) {
+    statusCls = 'calc-status-ok';   statusIcon = '🚀'; statusTxt = `Projeção ACIMA da meta em ${brl(projecao - meta)}`;
+  } else if (projecao >= meta * 0.90) {
+    statusCls = 'calc-status-warn'; statusIcon = '⚡'; statusTxt = `Quase lá — faltam ${brl(meta - projecao)} para a meta`;
+  } else {
+    statusCls = 'calc-status-bad';  statusIcon = '⚠';  statusTxt = `Abaixo do ritmo — projeção ${brl(projecao - meta)} vs meta`;
+  }
+
+  const barColor = projecao >= meta ? '#4ade80' : projecao >= meta * 0.9 ? '#fbbf24' : '#e94560';
+
+  el.innerHTML = `
+    <div class="calc-progress-wrap calc-result-left">
+      <div class="calc-progress-header">
+        <span class="calc-progress-label">Progresso do Mês</span>
+        <span class="calc-progress-pct" style="color:${barColor}">${pctReal.toFixed(1)}%</span>
+      </div>
+      <div class="calc-bar-bg">
+        <div class="calc-bar-proj" style="width:${pctProj.toFixed(1)}%;background:${barColor}"></div>
+        <div class="calc-bar-real" style="width:${pctReal.toFixed(1)}%;background:${barColor}"></div>
+      </div>
+      <div class="calc-bar-legend">
+        <span><i style="background:${barColor}"></i> Realizado: ${brl(real)}</span>
+        <span><i style="background:${barColor};opacity:.3"></i> Projeção: ${brl(projecao)}</span>
+        <span style="margin-left:auto">Meta: ${brl(meta)}</span>
+      </div>
+      <div><span class="${statusCls} calc-status-badge">${statusIcon} ${statusTxt}</span></div>
+    </div>
+    <div class="calc-stat">
+      <div class="calc-stat-label">Falta para a Meta</div>
+      <div class="calc-stat-value" style="color:#f87171">${falta > 0 ? brl(falta) : '✓ Meta atingida'}</div>
+      <div class="calc-stat-sub">${falta > 0 ? `${diasRestantes} dias restantes` : 'Parabéns!'}</div>
+    </div>
+    <div class="calc-stat">
+      <div class="calc-stat-label">Projeção Fim do Mês</div>
+      <div class="calc-stat-value" style="color:${barColor}">${brl(projecao)}</div>
+      <div class="calc-stat-sub">no ritmo atual (dia ${diaAtual}/${diasMes})</div>
+    </div>
+    <div class="calc-stat">
+      <div class="calc-stat-label">Ritmo Atual / Dia</div>
+      <div class="calc-stat-value" style="color:#a78bfa">${brl(ritmoAtual)}</div>
+      <div class="calc-stat-sub">média dos últimos ${diaAtual} dias</div>
+    </div>
+    <div class="calc-stat">
+      <div class="calc-stat-label">Ritmo Necessário / Dia</div>
+      <div class="calc-stat-value" style="color:${ritmoVsNecessario >= 0 ? '#4ade80' : '#f87171'}">${brl(ritmoNecessario)}</div>
+      <div class="calc-stat-sub">${ritmoVsNecessario >= 0 ? '+' : ''}${ritmoVsNecessario.toFixed(0)}% vs ritmo atual</div>
+    </div>
+  `;
+}
+
+function initCalc() {
+  const now = new Date();
+  document.getElementById('calcDiaAtual').value = now.getDate();
+  document.getElementById('calcDiasMes').value  = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+}
+
 // ── INIT ──
 window.addEventListener('load',()=>{
   const saved=localStorage.getItem('ampere_section')||'fin';
   showSection(saved);
+  initCalc();
   atualizar();
   if(saved==='crm')loadData();
   setInterval(()=>{if(!document.getElementById('secCRM').classList.contains('hidden'))loadData();},5*60*1000);
