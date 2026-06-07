@@ -433,8 +433,23 @@ const dados2025 = [
   [665220.92,26],[749316.36,36],[340982.96,16],[642966.93,36],
   [444576.94,20],[1249653.08,69],[429811.39,32],[348250.79,21]
 ];
-const brl = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fnum = s => { const str=String(s).trim(); if(str.includes(',')) return parseFloat(str.replace(/\./g,'').replace(',','.'))||0; return parseFloat(str)||0; };
+const brl   = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nbrl  = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fnum  = s => { const str=String(s).trim(); if(!str) return 0; if(str.includes(',')) return parseFloat(str.replace(/\./g,'').replace(',','.'))||0; return parseFloat(str)||0; };
+
+const MONEY_INPUT_IDS = ['metaFat','f26_0','f26_1','f26_2','f26_3','f26_4','f26_5','f26_6','f26_7','f26_8','f26_9','f26_10','f26_11','calcMeta','calcReal'];
+
+function fmtMoneyInput(el) {
+  const v = fnum(el.value);
+  el.value = v > 0 ? nbrl(v) : '';
+}
+
+function formatMoneyInputs() {
+  MONEY_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value.trim()) fmtMoneyInput(el);
+  });
+}
 
 function getDados2026() {
   return Array.from({length:12},(_,i) => {
@@ -751,6 +766,12 @@ window.addEventListener('load',()=>{
   const saved=localStorage.getItem('ampere_section')||'fin';
   showSection(saved);
   initCalc();
+  formatMoneyInputs();
+  // Aplica formatação ao sair de qualquer input monetário
+  MONEY_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('blur', () => fmtMoneyInput(el));
+  });
   atualizar();
   if(saved==='crm')loadData();
   setInterval(()=>{if(!document.getElementById('secCRM').classList.contains('hidden'))loadData();},5*60*1000);
